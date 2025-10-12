@@ -25,13 +25,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 🔹 Nouvelle étape pour remplacer la clé par le secret
+      # 🔹 Étape pour remplacer la clé par le secret avec log global
       - name: Replace API key placeholder
         run: |
-          find ./assets -type f -name "index*.js" | while read file; do
-            # Remplace la chaîne DEFAULT_API_KEY:"..." par la valeur du secret HF_API_KEY
-            sed -i "s/DEFAULT_API_KEY:\"[^\"]*\"/DEFAULT_API_KEY:\"${{ secrets.HF_API_KEY }}\"/g" "$file"
+          replaced=0
+          for file in $(find ./assets -type f -name "index*.js"); do
+            if grep -q 'DEFAULT_API_KEY:"' "$file"; then
+              sed -i "s/DEFAULT_API_KEY:\"[^\"]*\"/DEFAULT_API_KEY:\"${{ secrets.HF_API_KEY }}\"/g" "$file"
+              replaced=1
+            fi
           done
+
+          if [ $replaced -eq 1 ]; then
+            echo "✅ La clé API a été remplacée dans au moins un fichier."
+          else
+            echo "⚠️ Aucune clé API DEFAULT_API_KEY n'a été trouvée dans ./assets."
+          fi
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
